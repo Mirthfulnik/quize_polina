@@ -370,12 +370,12 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 <div id="app"></div>
 <div id="tools"></div>
 <div id="grain"></div>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.16.1/dist/mqtt.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 /* ===================================================================
    КВИЗ ДЛЯ ПОЛИ — один файл: планшет ведущего + телефоны игроков
-   Связь между устройствами: WebRTC через PeerJS (без регистрации)
+   Связь между устройствами: MQTT через WebSocket (публичный сервер, без регистрации)
    =================================================================== */
 
 // ↓↓↓ Сюда вставляются фото Поли (data:image/... или https://...) ↓↓↓
@@ -476,6 +476,11 @@ const ls = {
 };
 
 const params = new URLSearchParams(location.search);
+const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+const BROKER_OVERRIDE = params.get('broker');
+let brokerIdx = params.has('b') ? (Number(params.get('b')) || 0) % BROKERS.length : (Number(localStorage.getItem('pq_broker')) || 0) % BROKERS.length;
+const brokerUrl = i => BROKER_OVERRIDE || BROKERS[i];
+const topic = id => 'polya-quiz-v2/' + id;
 const JOIN = params.get('join');
 const IS_HOST = !JOIN;
 
@@ -595,7 +600,7 @@ function garland(){
 const FRESH = () => ({phase:'lobby', round:'main', qi:-1, qStart:0, deadline:0, answers:{}, players:{}, tbPlayers:[], winners:[]});
 let S = ls.get('pq_state', null) || FRESH();
 let uploadedPhotos = ls.get('pq_photos', []);
-let peer = null, conns = {}, hostId = ls.get('pq_hostid', null);
+let mq = null, seen = {}, hostId = ls.get('pq_hostid', null);
 let lastKey = '', endPending = false, lastSec = -1, timers = [];
 const allPhotos = () => PHOTOS.concat(uploadedPhotos);
 
@@ -623,25 +628,36 @@ function ranking(){
 }
 
 /* ---- networking ---- */
-function joinUrl(){ return location.origin + location.pathname + '?join=' + hostId; }
+function joinUrl(){ return location.origin + location.pathname + '?join=' + hostId + (BROKER_OVERRIDE ? '&broker=' + encodeURIComponent(BROKER_OVERRIDE) : '&b=' + brokerIdx); }
 function startPeer(){
-  if (typeof Peer === 'undefined'){ setNet('⚠️ Нет связи с сервером игры. Проверь интернет на планшете.'); return; }
-  if (!hostId){ hostId = 'polya-' + rnd(6); ls.set('pq_hostid', hostId); }
-  let tries = 0;
-  const open = () => {
-    peer = new Peer(hostId, {debug: 0});
-    peer.on('open', () => { setNet(''); drawQR(); });
-    peer.on('connection', c => {
-      c.on('data', d => onData(c, d));
-      c.on('close', () => { if (c.pid && conns[c.pid] === c){ delete conns[c.pid]; if (S.players[c.pid]) S.players[c.pid].online = false; hostPatch(); } });
-    });
-    peer.on('disconnected', () => { try{ peer.reconnect(); }catch(e){} });
-    peer.on('error', e => {
-      if (e.type === 'unavailable-id' && tries++ < 10){ setNet('Переподключаемся…'); try{ peer.destroy(); }catch(_){} setTimeout(open, 3000); }
-      else if (e.type === 'network' || e.type === 'server-error' || e.type === 'socket-error'){ setNet('⚠️ Проблема с интернетом — пробуем снова…'); setTimeout(() => { try{ peer.reconnect(); }catch(_){} }, 3000); }
-    });
-  };
-  open();
+  if (typeof mqtt === 'undefined'){ setNet('⚠️ Не загрузилась игра. Проверь интернет на планшете и обнови страницу.'); return; }
+  if (!hostId){ hostId = 'polya-' + rnd(8); ls.set('pq_hostid', hostId); }
+  connectBroker(brokerIdx, true);
+  // кто не присылал «я тут» 15 секунд — офлайн
+  setInterval(() => {
+    let changed = false;
+    plist().forEach(p => { if (p.bot) return; const on = Date.now() - (seen[p.id] || 0) < 15000; if (S.players[p.id].online !== on){ S.players[p.id].online = on; changed = true; } });
+    if (changed) hostPatch();
+  }, 3000);
+}
+function connectBroker(i, first){
+  setNet('Подключаемся к серверу игры…');
+  let ok = false;
+  const c = mqtt.connect(brokerUrl(i), {clientId: 'h_' + hostId + '_' + rnd(4), clean: true, reconnectPeriod: 3000, connectTimeout: 8000, keepalive: 20});
+  const fail = setTimeout(() => {
+    if (ok || BROKER_OVERRIDE) return;
+    try{ c.end(true); }catch(e){}
+    brokerIdx = (i + 1) % BROKERS.length; ls.set('pq_broker', brokerIdx);
+    connectBroker(brokerIdx);
+  }, 10000);
+  c.on('connect', () => {
+    ok = true; clearTimeout(fail); mq = c;
+    c.subscribe(topic(hostId) + '/up', {qos: 1});
+    setNet(''); drawQR(); broadcast();
+  });
+  c.on('message', (t, buf) => { let d; try{ d = JSON.parse(buf.toString()); }catch(e){ return; } onData(d); });
+  c.on('offline', () => { if (ok) setNet('⚠️ Пропал интернет — переподключаемся…'); });
+  c.on('error', () => {});
 }
 function setNet(msg){ const el = $('#netstatus'); if (el) el.innerHTML = msg ? `<div class="warn">${msg}</div>` : ''; }
 function drawQR(){
@@ -655,15 +671,15 @@ function drawQR(){
   if (location.protocol === 'file:') setNet('⚠️ Файл открыт с диска — телефоны не смогут его открыть. Загрузи его на хостинг (см. инструкцию).');
 }
 
-function onData(c, d){
+function onData(d){
   if (!d || typeof d !== 'object') return;
   const pid = String(d.pid || '').slice(0, 40); if (!pid) return;
+  const wasSeen = seen[pid]; seen[pid] = Date.now();
+  if (S.players[pid] && !S.players[pid].online){ S.players[pid].online = true; hostPatch(); }
+  if (d.t === 'ping'){ if (!wasSeen) send(pid); return; }
   if (d.t === 'hello'){
-    c.pid = pid; conns[pid] = c;
-    if (S.players[pid]){ S.players[pid].online = true; hostPatch(); }
     send(pid);
   } else if (d.t === 'reg'){
-    c.pid = pid; conns[pid] = c;
     const name = String(d.name || '').trim().slice(0, 16) || 'Игрок';
     const emoji = EMOJIS.includes(d.emoji) ? d.emoji : '🦊';
     const phrase = String(d.phrase || '').trim().slice(0, 70);
@@ -705,8 +721,11 @@ function snapshot(pid){
   }
   return st;
 }
-function send(pid){ const c = conns[pid]; if (c && c.open){ try{ c.send(snapshot(pid)); }catch(e){} } }
-function broadcast(){ Object.keys(conns).forEach(send); }
+function send(pid){
+  if (!mq || !mq.connected || String(pid).startsWith('bot-')) return;
+  try{ mq.publish(topic(hostId) + '/down/' + pid, JSON.stringify(snapshot(pid)), {qos: 1, retain: true}); }catch(e){}
+}
+function broadcast(){ Object.keys(seen).forEach(send); }
 
 /* ---- game flow ---- */
 function setPhase(ph){ S.phase = ph; save(); hostRender(); broadcast(); }
@@ -779,7 +798,7 @@ function addBot(){
     score: 0, correct: 0, tb: 0, tbTime: 0, gain: null, online: true, bot: true};
   save(); hostPatch(); broadcast();
 }
-function removePlayer(id){ delete S.players[id]; if (conns[id]) { try{ conns[id].close(); }catch(e){} delete conns[id]; } save(); hostPatch(); }
+function removePlayer(id){ delete S.players[id]; send(id); save(); hostPatch(); }
 
 /* ---- host render ---- */
 function hostRender(force){
@@ -1146,29 +1165,37 @@ function initHost(){
    PLAYER (телефон)
    ===================================================================== */
 const PID = ls.get('pq_pid', null) || (() => { const id = 'p-' + rnd(10); ls.set('pq_pid', id); return id; })();
-let pconn = null, ppeer = null, st = null, stAt = 0, retrying = false, connected = false;
+let pc = null, st = null, stAt = 0, connected = false, hb = null;
 let draft = ls.get('pq_draft', {name: '', emoji: '', phrase: ''});
 let pKey = '', myPick = null;
 
 function pConnect(){
-  if (typeof Peer === 'undefined'){ pStatus('Нет интернета или не загрузилась игра. Обнови страницу.'); return; }
+  if (typeof mqtt === 'undefined'){ pStatus('Не загрузилась игра. Проверь интернет и обнови страницу.'); return; }
   pStatus('Подключаемся к экрану…');
-  ppeer = new Peer({debug: 0});
-  ppeer.on('open', () => {
-    pconn = ppeer.connect(JOIN, {reliable: true});
-    pconn.on('open', () => { connected = true; pStatus(''); pconn.send({t: 'hello', pid: PID}); });
-    pconn.on('data', d => { if (d && d.t === 'st'){ st = d; stAt = performance.now(); pRender(); } });
-    pconn.on('close', pRetry); pconn.on('error', pRetry);
+  pc = mqtt.connect(brokerUrl(brokerIdx), {clientId: 'p_' + PID + '_' + rnd(4), clean: true, reconnectPeriod: 2000, connectTimeout: 8000, keepalive: 20});
+  pc.on('connect', () => {
+    connected = true;
+    pc.subscribe(topic(JOIN) + '/down/' + PID, {qos: 1});
+    psend({t: 'hello'});
+    if (!st) pStatus('Ищем экран ведущего…');
+    else pStatus('');
   });
-  ppeer.on('error', e => { pStatus(e.type === 'peer-unavailable' ? 'Не видим экран ведущего… Он включён?' : 'Связь пропала, переподключаемся…'); pRetry(); });
-  ppeer.on('disconnected', () => { try{ ppeer.reconnect(); }catch(e){} });
-}
-function pRetry(){
-  connected = false; if (retrying) return; retrying = true;
-  setTimeout(() => { retrying = false; try{ ppeer && ppeer.destroy(); }catch(e){} pConnect(); }, 2500);
+  pc.on('message', (t, buf) => {
+    let d; try{ d = JSON.parse(buf.toString()); }catch(e){ return; }
+    if (d && d.t === 'st'){ const first = !st; st = d; stAt = performance.now(); if (first) pKey = ''; pRender(); pStatus(''); }
+  });
+  pc.on('offline', () => { connected = false; pStatus('Связь пропала, переподключаемся…'); });
+  pc.on('error', () => {});
+  clearInterval(hb);
+  let tick = 0;
+  hb = setInterval(() => {
+    if (!connected) return; tick++;
+    psend({t: st ? 'ping' : 'hello'});
+    if (!st && tick >= 2) pStatus('Не видим экран ведущего… Он включён и показывает QR?');
+  }, 5000);
 }
 function pStatus(msg){ const el = $('#pstatus'); if (el) el.textContent = msg; else if (msg) { $('#app').innerHTML = `<div class="ph"><div class="wait"><span class="big">📡</span><span class="hand">${esc(msg)}</span></div><div class="status" id="pstatus"></div></div>`; } }
-function psend(o){ if (pconn && pconn.open){ try{ pconn.send({...o, pid: PID}); return true; }catch(e){} } return false; }
+function psend(o){ if (pc && pc.connected){ try{ pc.publish(topic(JOIN) + '/up', JSON.stringify({...o, pid: PID}), {qos: 1}); return true; }catch(e){} } return false; }
 
 function meBar(){
   if (!st.me) return '';
