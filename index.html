@@ -363,6 +363,29 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   .lobby-players.many .slot{min-height:calc(var(--u)*11)}
   .lobby .right{justify-content:center}
 }
+/* ---------- безопасные отступы ---------- */
+:root{--safeT:calc(var(--u)*7 + 22px + env(safe-area-inset-top,0px));--safeB:calc(58px + env(safe-area-inset-bottom,0px))}
+.screen{padding-top:var(--safeT)!important;padding-bottom:var(--safeB)!important;padding-left:calc(var(--u)*4 + env(safe-area-inset-left,0px));padding-right:calc(var(--u)*4 + env(safe-area-inset-right,0px))}
+.scene{padding-top:var(--safeT);padding-bottom:var(--safeB)}
+.garland{top:env(safe-area-inset-top,0px)}
+#tools{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.lobby .left,.lobby .right{min-height:0}
+[data-fit]{overflow:hidden}
+.fit{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*2.2);width:100%}
+.screen.center>.fit{gap:calc(var(--u)*1.6);text-align:center}
+.lobby .right>.fit{align-items:stretch;gap:calc(var(--u)*1.5)}
+.lobby .left,.lobby .right{justify-content:center}
+.qr-card{width:calc(var(--u)*26)}
+@media (orientation:portrait){
+  :root{--safeT:calc(var(--u)*9 + 20px + env(safe-area-inset-top,0px));--safeB:calc(16px + env(safe-area-inset-bottom,0px))}
+  [data-fit]{overflow:visible}
+}
+@media (orientation:landscape){
+  :root{--u:min(1vw,1.5vh)}
+  .lobby-players.many .slot{font-size:calc(var(--u)*2.1);text-align:center;padding:0 8px}
+  .revealed .pchip{font-size:calc(var(--u)*1.8)}
+  .qs{gap:calc(var(--u)*1.4)}
+}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
 </style>
 </head>
@@ -807,23 +830,37 @@ function hostRender(force){
   lastKey = key;
   const view = {lobby: hLobby, intro: hIntro, question: hQuestion, reveal: hQuestion, standings: hStandings, tb_intro: hTbIntro, winner: hWinner, final: hFinal}[S.phase] || hLobby;
   $('#app').innerHTML = view();
+  fitAll(); setTimeout(fitAll, 60); setTimeout(fitAll, 700);
   ({lobby: aLobby, intro: aIntro, question: aQuestion, reveal: aReveal, tb_intro: aTbIntro, winner: aWinner, final: aFinal, standings: aStandings})[S.phase]?.();
   hostPatch();
 }
+function fitAll(){
+  document.querySelectorAll('[data-fit]').forEach(box => {
+    const f = box.querySelector(':scope > .fit'); if (!f) return;
+    if (matchMedia('(orientation:portrait)').matches){ f.style.zoom = ''; return; }
+    f.style.zoom = 1;
+    const cs = getComputedStyle(box);
+    const avail = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const need = f.scrollHeight;
+    if (need > avail && avail > 0) f.style.zoom = Math.max(.45, (avail - 4) / need).toFixed(3);
+  });
+}
+window.addEventListener('resize', () => fitAll());
+if (document.fonts) document.fonts.ready.then(() => fitAll());
 function hostPatch(){
-  if (S.phase === 'lobby') patchLobby();
+  if (S.phase === 'lobby'){ patchLobby(); fitAll(); }
   if (S.phase === 'question' || S.phase === 'reveal') patchQuestion();
 }
 
 function hLobby(){
   return `<div class="garland">${garland()}</div>
   <div class="screen lobby">
-    <div class="left">
+    <div class="left" data-fit><div class="fit">
       <div class="title-card paper" style="--r:-2deg"><div class="hand kicker">квиз-вечеринка</div><h1>С днём рождения,<br><span>Поля!</span></h1><div class="sub">17 октября · Весы ♎</div></div>
       <div class="qr-card paper" style="--r:1.5deg"><div id="qr"><span class="hand" style="font-size:24px">готовим QR…</span></div>
         <div class="hand">Сканируй и залетай!</div><div class="small" id="joinurl"></div><div id="netstatus"></div></div>
-    </div>
-    <div class="right">
+    </div></div>
+    <div class="right" data-fit><div class="fit">
       <h2 class="hand">Игроки</h2>
       <div id="lobbyPlayers" class="lobby-players"></div>
       <div class="lobby-actions">
@@ -833,7 +870,7 @@ function hLobby(){
           <label class="btn small">📷 Фото Поли <span id="photoCount"></span><input type="file" id="photoIn" accept="image/*" multiple hidden></label>
         </div>
       </div>
-    </div>
+    </div></div>
   </div>`;
 }
 function aLobby(){
@@ -855,7 +892,7 @@ function patchLobby(){
       <button class="x" data-rm="${esc(p.id)}" title="Убрать">✕</button><span class="dot ${p.online ? '' : 'off'}"></span></div>`).join('');
   for (let i = ps.length; i < 5; i++) h += `<div class="slot">ждём игрока…</div>`;
   box.innerHTML = h;
-  box.classList.toggle('many', ps.length >= 5);
+  box.classList.toggle('many', true);
   box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { if (confirm('Убрать этого игрока?')) removePlayer(b.dataset.rm); });
   $('#startBtn').disabled = ps.length === 0;
   const pc = $('#photoCount'); if (pc) pc.textContent = allPhotos().length ? `(${allPhotos().length})` : '';
@@ -942,7 +979,7 @@ function hIntro(){
         <div class="tag paper slide" style="--r:1deg;--d:1.2s">🎤 отличает ${gaz} от «ещкере»</div>
         <div class="tag paper slide c1" style="--r:-1deg;--d:2.3s">💄 подберёт комплекс косметики под кого угодно</div>
         <div class="tag paper slide" style="--r:1.5deg;--d:3.4s">📝 после любого фильма читает рецензии</div>
-        <div class="tag paper slide c3 dark" style="--r:-1deg;--d:4.5s">🎧 уважает только иностранную музыку</div>
+        <div class="tag paper slide c3 dark" style="--r:-1deg;--d:4.5s">🎧 любит зарубежную музыку и хорошую русскую</div>
       </div>
     </div>
   </div>
@@ -984,7 +1021,7 @@ function aIntro(){
     [5000,  1, 'Встречайте — именинница Поля! Семнадцатое октября, знак зодиака — Весы.'],
     [11500, 2, 'Поля любит кофе, Японию, шашлык, медовик и путешествия.'],
     [19000, 3, 'А ещё нежится в кровати до часу дня. И ни за что не ляжет спать раньше двух ночи.'],
-    [27000, 4, 'Остроумно шутит. Отличает «газ знакомится» от «ещкере». Подберёт косметику кому угодно. После любого фильма читает рецензии. И уважает только иностранную музыку.'],
+    [27000, 4, 'Остроумно шутит. Отличает «газ знакомится» от «ещкере». Подберёт косметику кому угодно. После любого фильма читает рецензии. И любит зарубежную музыку — и хорошую русскую.'],
     [40000, 5, 'Поэтому сегодня наш квиз — про кино, музыку, вино… и…'],
     [50000, 6, 'Двадцать один вопрос. Сорок пять секунд на ответ. Телефоны к бою!'],
   ];
@@ -1057,21 +1094,21 @@ function rankRows(r, delayStep = .12){
     <span class="pl">${p.place}</span><span class="em">${p.emoji}</span><span class="nm">${esc(p.name)}<div class="sub">${p.correct} из ${S.round === 'tb' || S.phase === 'final' ? Q.length : S.qi + 1} верно${S.tbPlayers.includes(p.id) && (S.phase === 'final') ? ` · экстра: ${p.tb || 0}` : ''}</div></span><span class="sc">${p.score}</span></div>`).join('');
 }
 function hStandings(){
-  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*3)">
+  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*3)" data-fit><div class="fit">
     <h1 class="bigtitle hand">Промежуточный счёт</h1><div class="small" style="font-size:calc(var(--u)*2)">после ${S.qi + 1} вопросов из ${Q.length}</div>
     <div class="ranklist">${rankRows(ranking())}</div>
-    <button class="btn coral nextbtn" id="nextBtn">Следующий вопрос ➜</button></div>`;
+    <button class="btn coral nextbtn" id="nextBtn">Следующий вопрос ➜</button></div></div>`;
 }
 function aStandings(){ $('#nextBtn').onclick = nextStep; Voice.say('Промежуточный счёт! Лидирует ' + ranking()[0].name + '.'); }
 
 /* ---- TIEBREAK ---- */
 function hTbIntro(){
   const ps = S.tbPlayers.map(id => ({id, ...S.players[id]}));
-  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*3)">
+  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*3)" data-fit><div class="fit">
     <h1 class="bigtitle hand pop" style="color:var(--wine)">Ничья на вершине!</h1>
     <div class="others">${ps.map((p, i) => `<div class="pcard paper" style="--r:${i % 2 ? 2 : -2}deg;animation-delay:${.3 + i * .2}s"><div class="em">${p.emoji}</div><div><div class="nm">${esc(p.name)}</div><div class="ph">${p.score} очков</div></div></div>`).join('')}</div>
     <div class="tag paper" style="--r:-1deg;font-size:calc(var(--u)*3)">👑 Супер-игра: ${TB.length} экстра-вопроса решат, кто заберёт корону.<br><span class="small" style="font-size:.7em">Отвечают только финалисты. Если и тут ничья — побеждает тот, кто отвечал быстрее.</span></div>
-    <button class="btn coral nextbtn" id="nextBtn">Начать супер-игру ▶</button></div>`;
+    <button class="btn coral nextbtn" id="nextBtn">Начать супер-игру ▶</button></div></div>`;
 }
 function aTbIntro(){
   $('#nextBtn').onclick = nextStep; AudioFX.drumroll(1.5);
@@ -1115,14 +1152,14 @@ function hFinal(){
   const pod = r.slice(0, 3), rest = r.slice(3);
   const order = pod.length === 3 ? [pod[1], pod[0], pod[2]] : pod.length === 2 ? [pod[1], pod[0]] : pod;
   const h = {1: 15, 2: 10, 3: 7};
-  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*1.5)">
+  return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*1.5)" data-fit><div class="fit">
     <h1 class="bigtitle hand">Итоговый рейтинг</h1>
     <div class="podium">${order.map((p, i) => `<div class="pod">
       <div class="em sticker" style="animation-delay:${i * .3}s">${p.emoji}</div><div class="nm">${esc(p.name)}</div>
       <div class="block c${[1,0,2][i] ?? 3}" style="height:calc(var(--u)*${h[Math.min(p.place, 3)]});animation-delay:${.2 + i * .25}s">${p.place}<small>${p.score} очк.${p.tb ? ' · экстра ' + p.tb : ''}</small></div></div>`).join('')}</div>
     ${rest.length ? `<div class="ranklist" style="margin-top:calc(var(--u)*2)">${rankRows(rest)}</div>` : ''}
     <div style="display:flex;gap:12px;margin-top:calc(var(--u)*2)"><button class="btn" id="replayWin">🎬 Ещё раз победное видео</button><button class="btn" id="newGameBtn">↺ Новая игра</button></div>
-  </div>`;
+  </div></div>`;
 }
 function aFinal(){
   $('#replayWin').onclick = () => setPhase('winner');
