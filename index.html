@@ -73,7 +73,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 .pcard{position:relative;padding:calc(var(--u)*1.5) calc(var(--u)*2);display:flex;align-items:center;gap:calc(var(--u)*1.5);min-height:calc(var(--u)*10);animation:popIn .5s cubic-bezier(.3,1.6,.5,1) both}
 .pcard .em{font-size:calc(var(--u)*6);line-height:1}
 .pcard .nm{font-weight:700;font-size:calc(var(--u)*2.4)}
-.pcard .ph{overflow-wrap:anywhere;font-family:Caveat,cursive;font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.1}
+.pcard .phr{overflow-wrap:anywhere;font-family:Caveat,cursive;font-size:calc(var(--u)*2.1);color:var(--ink2);line-height:1.1}
 .pcard .x{position:absolute;top:4px;right:6px;background:none;font-size:16px;color:var(--ink2);opacity:.5}
 .pcard .dot{position:absolute;bottom:8px;right:10px;width:10px;height:10px;border-radius:50%;background:var(--leaf)}
 .pcard .dot.off{background:#c9b49a}
@@ -344,7 +344,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   .lobby-players.many .pcard{min-height:calc(var(--u)*9);padding:calc(var(--u)*1.2)}
   .lobby-players.many .pcard .em{font-size:calc(var(--u)*4.5)}
   .lobby-players.many .pcard .nm{font-size:calc(var(--u)*2.1)}
-  .lobby-players.many .pcard .ph{font-size:calc(var(--u)*1.8)}
+  .lobby-players.many .pcard .phr{font-size:calc(var(--u)*1.8)}
   .lobby-players.many .slot{min-height:calc(var(--u)*9)}
   .lobby .right{gap:calc(var(--u)*1.5)}
   .lobby h2{font-size:calc(var(--u)*4.2)}
@@ -359,7 +359,7 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
 @media (orientation:landscape){
   .lobby-players.many .pcard{flex-direction:column;justify-content:center;text-align:center;gap:calc(var(--u)*.4);min-height:0;padding:calc(var(--u)*1) calc(var(--u)*1)}
   .lobby-players.many .pcard .em{font-size:calc(var(--u)*4)}
-  .lobby-players.many .pcard .ph{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .lobby-players.many .pcard .phr{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .lobby-players.many .slot{min-height:calc(var(--u)*11)}
   .lobby .right{justify-content:center}
 }
@@ -385,6 +385,95 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   .lobby-players.many .slot{font-size:calc(var(--u)*2.1);text-align:center;padding:0 8px}
   .revealed .pchip{font-size:calc(var(--u)*1.8)}
   .qs{gap:calc(var(--u)*1.4)}
+}
+/* ===== v3: панель игроков слева, без наложений ===== */
+.screen.qs2{display:grid!important;grid-template-columns:clamp(150px,19%,calc(var(--u)*34)) minmax(0,1fr);grid-template-rows:minmax(0,1fr)!important;gap:calc(var(--u)*2.2);overflow:visible}
+.qmain{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:calc(var(--u)*1.6);min-height:0;min-width:0}
+.qs2:not(.revealed) .qmain{grid-template-rows:auto auto minmax(0,1fr)}
+.side{display:flex;flex-direction:column;gap:calc(var(--u)*1);padding:calc(var(--u)*1.3);min-height:0;min-width:0;overflow:hidden;background:rgba(255,250,240,.82)}
+.side-h{display:flex;flex-direction:column;align-items:center;line-height:1.05;gap:2px}
+.side-h .hand{font-size:calc(var(--u)*3.2);color:var(--wine)}
+.side-c{font-size:calc(var(--u)*1.6);font-weight:700;color:var(--ink2)}
+.side-list{flex:1;min-height:0;display:flex;flex-direction:column;gap:calc(var(--u)*.8);--fs:2.2}
+.srow{flex:0 1 auto;min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:.5em;row-gap:.1em;align-items:center;
+  padding:.45em .6em;border-radius:10px 14px 10px 12px;background:#fff;box-shadow:1px 2px 0 rgba(70,45,20,.18);font-size:calc(var(--u)*var(--fs));line-height:1.15;transition:background .3s}
+.srow .em{grid-row:1/3;font-size:1.75em;line-height:1}
+.srow .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.srow .st{font-size:.78em;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.srow.done{background:#e3f1d6}
+.srow.ok{background:var(--leaf);color:#fff}.srow.ok .st{color:#fff}
+.srow.no{background:#f6d9d2}
+.fact .paper b{margin-right:.35em}
+.fact{min-width:0}.fact .paper{min-width:0}
+.qtop{min-width:0}.qcard{min-width:0}
+/* победа: место под кнопку */
+.winbox{padding:calc(var(--u)*3) 16px calc(var(--u)*14);box-sizing:border-box}
+.winbox>.fit{gap:calc(var(--u)*1.4)}
+.win .finalbtn{bottom:calc(var(--u)*3 + env(safe-area-inset-bottom,0px))}
+.bubble{overflow-wrap:anywhere}
+.ribbon{max-width:90%;overflow-wrap:anywhere;text-align:center}
+/* пьедестал: блок растёт под текст */
+.pod .block{height:auto;box-sizing:border-box;padding:.25em .3em .45em;transform-origin:bottom;animation-name:growY}
+.pod .block small{display:block;overflow-wrap:anywhere}
+@keyframes growY{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+@media (orientation:portrait){
+  .screen.qs2{grid-template-columns:minmax(0,1fr);grid-template-rows:max-content max-content!important;overflow-y:auto;align-content:start}
+  .qmain{min-height:auto}
+  #tools{bottom:auto!important}
+  .qmain,.qs2:not(.revealed) .qmain{grid-template-rows:repeat(4,max-content)}
+  .side{order:2;padding:10px}
+  .side-h{flex-direction:row;justify-content:space-between}
+  .side-list{flex-direction:row;flex-wrap:wrap;--fs:2.6!important}
+  .srow{flex:1 1 40%}
+}
+/* ===== v3.1 ===== */
+:root{--safeB:calc(68px + env(safe-area-inset-bottom,0px))}
+.screen.qs2{display:block!important;overflow:visible}
+.qgrid{display:grid;height:100%;grid-template-columns:clamp(150px,19%,calc(var(--u)*34)) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:calc(var(--u)*2.2)}
+.opt .ot{min-width:0}
+.opt .pickers{flex:0 1 auto;max-width:38%;flex-wrap:wrap;justify-content:flex-end;align-content:center;font-size:calc(var(--u)*2.8);line-height:1}
+.opt .pickers.many{font-size:calc(var(--u)*2)}
+.pcard>div:not(.em){min-width:0;max-width:100%}
+.pcard .nm,.pcard .phr{overflow-wrap:anywhere}
+.scene>*{max-width:100%}
+@media (orientation:portrait){
+  :root{--safeB:calc(16px + env(safe-area-inset-bottom,0px))}
+  .screen.qs2{overflow-y:auto}
+  .qgrid{display:flex;flex-direction:column;height:auto;gap:calc(var(--u)*2)}
+  .qmain,.qs2:not(.revealed) .qmain{display:flex;flex-direction:column;gap:calc(var(--u)*1.6)}
+  .opts{display:flex!important;flex-direction:column}
+  [data-fit].scene{overflow:hidden}
+}
+/* ===== v3.2 ===== */
+.opt .ot{overflow-wrap:normal;word-break:normal;hyphens:manual}
+.opt .pickers{flex:0 0 auto;max-width:none;font-size:calc(var(--u)*2.2);font-weight:900;background:rgba(255,255,255,.9);color:var(--ink);border-radius:999px;padding:0 .45em;line-height:1.6}
+.opt .pickers:empty{display:none}
+.srow{grid-template-columns:auto minmax(0,1fr) auto}
+.srow .tot{grid-column:3;grid-row:1/3;font-weight:900;font-size:1.05em;padding-left:.2em}
+.srow .lt{font-style:normal;font-weight:900;display:inline-flex;align-items:center;justify-content:center;width:1.35em;height:1.35em;border-radius:50%;background:rgba(255,255,255,.9);color:var(--ink);font-size:.9em;vertical-align:middle}
+@media (orientation:portrait){.opt .pickers{font-size:calc(var(--u)*2.6)}}
+/* ===== v3.3 ===== */
+.srow{grid-template-columns:auto minmax(0,1fr)}
+.qgrid{grid-template-columns:clamp(170px,21%,calc(var(--u)*36)) minmax(0,1fr)}
+.opts{container-type:inline-size;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.opt{font-size:min(calc(var(--u)*2.8),2.9cqi)}
+.opt .ol{width:calc(var(--u)*5);height:calc(var(--u)*5);font-size:calc(var(--u)*2.7)}
+@media (orientation:portrait){
+  .opts{grid-template-columns:none!important}
+  .opt{font-size:min(calc(var(--u)*3.2),5.6cqi)}
+}
+.opt.mid .ot{font-size:.93em}.opt.long .ot{font-size:.84em}
+.lobby-players .pcard{container-type:inline-size}
+.lobby-players .pcard .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;max-width:100%}
+.lobby-players.many .pcard .nm{font-size:min(calc(var(--u)*2.1),9.5cqi)}
+.lobby-players .pcard .phr{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.1;max-height:2.25em;overflow-wrap:break-word}
+.lobwrap{display:contents}
+@media (orientation:portrait){
+  :root{--safeT:calc(var(--u)*9 + 32px + env(safe-area-inset-top,0px))}
+  .screen.lobby{overflow:hidden;display:block}
+  .lobwrap{display:flex;flex-direction:column;gap:calc(var(--u)*3)}
+  .lobby .left{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:calc(var(--u)*3)}
+  .lobby .left>.fit{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
 </style>
@@ -491,6 +580,7 @@ const SHAPE_ROT = [-1.2, 1, .8, -1.4];
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rnd = n => Math.random().toString(36).slice(2, 2 + n);
+const short = (t, n) => { const a = Array.from(String(t)); return a.length > n ? a.slice(0, n - 1).join('').trimEnd() + '…' : String(t); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ls = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
@@ -835,14 +925,17 @@ function hostRender(force){
   hostPatch();
 }
 function fitAll(){
+  const portrait = matchMedia('(orientation:portrait)').matches;
   document.querySelectorAll('[data-fit]').forEach(box => {
-    const f = box.querySelector(':scope > .fit'); if (!f) return;
-    if (matchMedia('(orientation:portrait)').matches){ f.style.zoom = ''; return; }
+    const f = box.querySelector(':scope > .fit') || box.firstElementChild; if (!f) return;
+    const mode = box.dataset.fit || '';
     f.style.zoom = 1;
+    if ((mode === 'portrait' && !portrait) || (mode === 'landscape' && portrait)) return;
     const cs = getComputedStyle(box);
     const avail = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const need = f.scrollHeight;
-    if (need > avail && avail > 0) f.style.zoom = Math.max(.45, (avail - 4) / need).toFixed(3);
+    const minZ = parseFloat(box.dataset.fitMin || .45);
+    if (need > avail && avail > 0) f.style.zoom = Math.max(minZ, (avail - 4) / need).toFixed(3);
   });
 }
 window.addEventListener('resize', () => fitAll());
@@ -854,13 +947,13 @@ function hostPatch(){
 
 function hLobby(){
   return `<div class="garland">${garland()}</div>
-  <div class="screen lobby">
-    <div class="left" data-fit><div class="fit">
+  <div class="screen lobby" data-fit="portrait" data-fit-min=".5"><div class="lobwrap">
+    <div class="left" data-fit="landscape"><div class="fit">
       <div class="title-card paper" style="--r:-2deg"><div class="hand kicker">квиз-вечеринка</div><h1>С днём рождения,<br><span>Поля!</span></h1><div class="sub">17 октября · Весы ♎</div></div>
       <div class="qr-card paper" style="--r:1.5deg"><div id="qr"><span class="hand" style="font-size:24px">готовим QR…</span></div>
         <div class="hand">Сканируй и залетай!</div><div class="small" id="joinurl"></div><div id="netstatus"></div></div>
     </div></div>
-    <div class="right" data-fit><div class="fit">
+    <div class="right" data-fit="landscape"><div class="fit">
       <h2 class="hand">Игроки</h2>
       <div id="lobbyPlayers" class="lobby-players"></div>
       <div class="lobby-actions">
@@ -871,7 +964,7 @@ function hLobby(){
         </div>
       </div>
     </div></div>
-  </div>`;
+  </div></div>`;
 }
 function aLobby(){
   drawQR();
@@ -888,7 +981,7 @@ function patchLobby(){
   const sig = JSON.stringify(ps.map(p => [p.id, p.name, p.emoji, p.phrase, p.online])) + allPhotos().length;
   if (box.dataset.sig === sig) return; box.dataset.sig = sig;
   let h = ps.map((p, i) => `<div class="pcard paper" style="--r:${rots[i % 6]}deg">
-      <div class="em">${p.emoji}</div><div><div class="nm">${esc(p.name)}${p.bot ? ' <span class="small">(тест)</span>' : ''}</div><div class="ph">${p.phrase ? '«' + esc(p.phrase) + '»' : ''}</div></div>
+      <div class="em">${p.emoji}</div><div><div class="nm">${esc(p.name)}${p.bot ? ' <span class="small">(тест)</span>' : ''}</div><div class="phr">${p.phrase ? '«' + esc(short(p.phrase, 38)) + '»' : ''}</div></div>
       <button class="x" data-rm="${esc(p.id)}" title="Убрать">✕</button><span class="dot ${p.online ? '' : 'off'}"></span></div>`).join('');
   for (let i = ps.length; i < 5; i++) h += `<div class="slot">ждём игрока…</div>`;
   box.innerHTML = h;
@@ -931,10 +1024,10 @@ function hIntro(){
   <div class="garland">${garland()}</div>
   <button class="btn skip" id="skipIntro">Пропустить ⏭</button>
   <div class="curtain l"></div><div class="curtain r"></div>
-  <div class="scene" data-t="0">
+  <div class="scene" data-fit data-t="0">
     <div class="s-title drop" style="--d:2.4s"><span class="hand">дамы и господа, внимание!</span>Сегодня особенный день</div>
   </div>
-  <div class="scene" data-t="1">
+  <div class="scene" data-fit data-t="1">
     <div class="lay">
       <div class="col" style="align-items:center">
         <div class="letters">${['П','О','Л','Я'].map((l, i) => `<div class="letter paper drop c${i}" style="--r:${[-4,3,-2,5][i]}deg;--d:${.15 + i * .25}s">${l}</div>`).join('')}</div>
@@ -943,7 +1036,7 @@ function hIntro(){
       ${photoFrame(0, 4, 'наша именинница', 1.1)}
     </div>
   </div>
-  <div class="scene" data-t="2">
+  <div class="scene" data-fit data-t="2">
     <div class="lay">
       ${photoFrame(1, -5, 'в поисках кофе', .2)}
       <div class="col" style="align-items:center">
@@ -958,7 +1051,7 @@ function hIntro(){
       </div>
     </div>
   </div>
-  <div class="scene" data-t="3">
+  <div class="scene" data-fit data-t="3">
     <div class="lay">
       <div class="col" style="align-items:center">
         <div class="bed drop" style="--d:.2s">${bedSVG}</div>
@@ -972,7 +1065,7 @@ function hIntro(){
       </div>
     </div>
   </div>
-  <div class="scene" data-t="4">
+  <div class="scene" data-fit data-t="4">
     <div class="lay">
       <div class="col" style="max-width:calc(var(--u)*62)">
         <div class="tag paper slide c0 dark" style="--r:-1.5deg;--d:.2s">😏 шутит остроумнее всех</div>
@@ -983,7 +1076,7 @@ function hIntro(){
       </div>
     </div>
   </div>
-  <div class="scene" data-t="5">
+  <div class="scene" data-fit data-t="5">
     <div class="col" style="align-items:center;gap:calc(var(--u)*2.5)">
       <div class="s-title pop" style="--d:.1s;font-size:calc(var(--u)*4.4)"><span class="hand">поэтому сегодня в квизе</span></div>
       <div class="themes">
@@ -999,7 +1092,7 @@ function hIntro(){
       </div>
     </div>
   </div>
-  <div class="scene" data-t="6">
+  <div class="scene" data-fit data-t="6">
     <div class="col" style="align-items:center;gap:calc(var(--u)*3)">
       <div class="s-title drop" style="--d:.1s"><span class="hand">21 вопрос · 45 секунд на ответ</span>Телефоны к бою!</div>
       <button class="btn coral gobtn pop" id="goBtn" style="--d:.8s">Поехали! ▶</button>
@@ -1038,7 +1131,9 @@ function hQuestion(){
   const opts = q.o.map((o, i) => `<div class="opt paper c${i} ${o.length > 32 ? 'long' : o.length > 20 ? 'mid' : ''} ${rev ? (i === q.a ? 'right' : 'wrong') : ''}" style="--r:${SHAPE_ROT[i]}deg;animation-delay:${rev ? 0 : .25 + i * .12}s">
       <span class="ol">${LETTERS[i]}</span><span class="ot">${esc(o)}</span><span class="pickers" id="pk${i}"></span></div>`).join('');
   return `<div class="garland">${garland()}</div>
-  <div class="screen qs ${rev ? 'revealed' : ''}">
+  <div class="screen qs qs2 ${rev ? 'revealed' : ''}" data-fit="portrait" data-fit-min=".6"><div class="qgrid">
+    <aside class="side paper" style="--r:-.4deg"><div class="side-h"><span class="hand">Игроки</span><span class="side-c" id="sideCount"></span></div><div class="side-list" id="answeredRow"></div></aside>
+    <div class="qmain">
     <div class="qtop">
       <div class="chip paper" style="--c:${cat.color};--r:-2deg">${cat.icon} ${cat.name}</div>
       <div class="qnum hand">${lbl}</div>
@@ -1046,9 +1141,9 @@ function hQuestion(){
     </div>
     <div class="qcard paper" style="--r:-.5deg">${esc(q.q)}</div>
     <div class="opts">${opts}</div>
-    <div class="prow" id="answeredRow"></div>
     ${rev ? `<div class="fact"><div class="paper" style="--r:-.6deg"><b>А вы знали?</b> ${esc(q.f)}</div><button class="btn coral nextbtn" id="nextBtn">Дальше ➜</button></div>` : ''}
-  </div>`;
+    </div>
+  </div></div>`;
 }
 function aQuestion(){
   const loop = () => {
@@ -1073,16 +1168,22 @@ function patchQuestion(){
   const row = $('#answeredRow'); if (!row) return;
   const rev = S.phase === 'reveal', q = curQ();
   const ps = eligibleList();
-  row.innerHTML = ps.map((p, i) => {
+  const n = ps.length;
+  row.style.setProperty('--fs', n <= 5 ? 2.2 : n <= 7 ? 1.85 : n <= 9 ? 1.55 : 1.3);
+  const cnt = $('#sideCount');
+  if (cnt) cnt.textContent = rev ? `верно: ${ps.filter(p => p.gain > 0).length}/${n}` : `ответили: ${ps.filter(p => S.answers[p.id]).length}/${n}`;
+  const html = ps.map((p, i) => {
     const a = S.answers[p.id];
-    if (!rev) return `<div class="pchip paper ${a ? 'done' : ''}" style="--r:${[-1.5,1,-.5,1.5][i % 4]}deg"><span class="em">${p.emoji}</span>${esc(p.name)} <span class="st">${a ? '✓ ответ' : 'думает…'}</span></div>`;
+    const totNow = S.round === 'tb' ? (p.tb || 0) : p.score;
+    if (!rev) return `<div class="srow ${a ? 'done' : ''}"><span class="em">${p.emoji}</span><span class="nm">${esc(p.name)}</span><span class="st">${a ? '✓ ответил' : 'думает…'}</span></div>`;
     const ok = p.gain > 0;
-    const gainTxt = S.round === 'tb' ? (ok ? '+1 экстра' : '0') : (ok ? '+' + POINTS : '0');
-    const tot = S.round === 'tb' ? `${p.tb || 0} из ${S.qi + 1}` : p.score;
-    return `<div class="pchip paper ${ok ? 'ok' : 'no'}" style="--r:${[-1.5,1,-.5,1.5][i % 4]}deg"><span class="em">${p.emoji}</span>${esc(p.name)} <span class="st">${ok ? '✓' : (a ? '✗' : '⏱ не успел')} ${gainTxt}</span><span class="tot">· ${tot}</span></div>`;
+    const gainTxt = S.round === 'tb' ? (ok ? '+1' : '+0') : (ok ? '+' + POINTS : '+0');
+    const pick = a ? `<i class="lt">${LETTERS[a.c]}</i>` : '';
+    return `<div class="srow ${ok ? 'ok' : 'no'}"><span class="em">${p.emoji}</span><span class="nm">${esc(p.name)}</span><span class="st">${ok ? '✓' : (a ? '✗' : '⏱')} ${pick} ${gainTxt} · <b>${totNow}</b></span></div>`;
   }).join('');
+  if (row.dataset.h !== html){ row.dataset.h = html; row.innerHTML = html; }
   if (rev){
-    for (let i = 0; i < 4; i++){ const el = $('#pk' + i); if (el) el.innerHTML = ps.filter(p => S.answers[p.id] && S.answers[p.id].c === i).map(p => `<span class="sticker">${p.emoji}</span>`).join(''); }
+    for (let i = 0; i < 4; i++){ const el = $('#pk' + i); if (!el) continue; const k = ps.filter(p => S.answers[p.id] && S.answers[p.id].c === i).length; el.textContent = k ? '×' + k : ''; }
   }
   const tn = $('#tnum');
   if (tn && S.phase === 'question'){ const sec = Math.ceil(Math.max(0, S.deadline - Date.now()) / 1000); tn.textContent = sec; $('#timer').classList.toggle('hot', sec <= 10); }
@@ -1106,7 +1207,7 @@ function hTbIntro(){
   const ps = S.tbPlayers.map(id => ({id, ...S.players[id]}));
   return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*3)" data-fit><div class="fit">
     <h1 class="bigtitle hand pop" style="color:var(--wine)">Ничья на вершине!</h1>
-    <div class="others">${ps.map((p, i) => `<div class="pcard paper" style="--r:${i % 2 ? 2 : -2}deg;animation-delay:${.3 + i * .2}s"><div class="em">${p.emoji}</div><div><div class="nm">${esc(p.name)}</div><div class="ph">${p.score} очков</div></div></div>`).join('')}</div>
+    <div class="others">${ps.map((p, i) => `<div class="pcard paper" style="--r:${i % 2 ? 2 : -2}deg;animation-delay:${.3 + i * .2}s"><div class="em">${p.emoji}</div><div><div class="nm">${esc(p.name)}</div><div class="phr">${p.score} очков</div></div></div>`).join('')}</div>
     <div class="tag paper" style="--r:-1deg;font-size:calc(var(--u)*3)">👑 Супер-игра: ${TB.length} экстра-вопроса решат, кто заберёт корону.<br><span class="small" style="font-size:.7em">Отвечают только финалисты. Если и тут ничья — побеждает тот, кто отвечал быстрее.</span></div>
     <button class="btn coral nextbtn" id="nextBtn">Начать супер-игру ▶</button></div></div>`;
 }
@@ -1122,12 +1223,12 @@ function hWinner(){
   const multi = ws.length > 1;
   return `<div class="win" id="win"><div class="spot"></div>
     <div class="and">и побеждает…</div>
-    <div class="winbox">
+    <div class="winbox" data-fit><div class="fit">
       <div class="crown sticker">👑</div>
       <div style="display:flex;gap:calc(var(--u)*4)">${ws.map(w => `<div class="winem sticker" style="${multi ? 'font-size:calc(var(--u)*16)' : ''}">${w.emoji}</div>`).join('')}</div>
       <div class="ribbon">${ws.map(w => esc(w.name)).join(' и ')}</div>
       ${ws.filter(w => w.phrase).map(w => `<div class="bubble">«${esc(w.phrase)}»${multi ? ` — ${esc(w.name)}` : ''}</div>`).join('')}
-    </div>
+    </div></div>
     <button class="btn mustard nextbtn finalbtn" id="nextBtn">Итоговый рейтинг ➜</button>
   </div>`;
 }
@@ -1151,12 +1252,12 @@ function hFinal(){
   const r = ranking();
   const pod = r.slice(0, 3), rest = r.slice(3);
   const order = pod.length === 3 ? [pod[1], pod[0], pod[2]] : pod.length === 2 ? [pod[1], pod[0]] : pod;
-  const h = {1: 15, 2: 10, 3: 7};
+  const h = {1: 17, 2: 13, 3: 10.5};
   return `<div class="garland">${garland()}</div><div class="screen center" style="gap:calc(var(--u)*1.5)" data-fit><div class="fit">
     <h1 class="bigtitle hand">Итоговый рейтинг</h1>
     <div class="podium">${order.map((p, i) => `<div class="pod">
       <div class="em sticker" style="animation-delay:${i * .3}s">${p.emoji}</div><div class="nm">${esc(p.name)}</div>
-      <div class="block c${[1,0,2][i] ?? 3}" style="height:calc(var(--u)*${h[Math.min(p.place, 3)]});animation-delay:${.2 + i * .25}s">${p.place}<small>${p.score} очк.${p.tb ? ' · экстра ' + p.tb : ''}</small></div></div>`).join('')}</div>
+      <div class="block c${[1,0,2][i] ?? 3}" style="min-height:calc(var(--u)*${h[Math.min(p.place, 3)]});animation-delay:${.2 + i * .25}s">${p.place}<small>${p.score} очк.${p.tb ? ' · экстра ' + p.tb : ''}</small></div></div>`).join('')}</div>
     ${rest.length ? `<div class="ranklist" style="margin-top:calc(var(--u)*2)">${rankRows(rest)}</div>` : ''}
     <div style="display:flex;gap:12px;margin-top:calc(var(--u)*2)"><button class="btn" id="replayWin">🎬 Ещё раз победное видео</button><button class="btn" id="newGameBtn">↺ Новая игра</button></div>
   </div></div>`;
