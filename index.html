@@ -475,6 +475,9 @@ button{font-family:inherit;cursor:pointer;border:0;color:inherit}
   .lobby .left{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:calc(var(--u)*3)}
   .lobby .left>.fit{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center}
 }
+.voicerow{align-items:center}
+.vlabel{gap:.4em;cursor:default}
+.vlabel select{font:inherit;font-weight:500;border:0;background:transparent;color:var(--ink);max-width:min(46vw,360px);text-overflow:ellipsis;cursor:pointer}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
 </style>
 </head>
@@ -663,12 +666,15 @@ const AudioFX = (() => {
 /* ---------------- VOICE (озвучка вопросов) ---------------- */
 const Voice = {
   on: ls.get('pq_voice', true), v: null,
-  pick(){ if (!('speechSynthesis' in window)) return; const vs = speechSynthesis.getVoices();
-    this.v = vs.find(v => /^ru/i.test(v.lang) && /google|milena|yuri|premium|enhanced/i.test(v.name)) || vs.find(v => /^ru/i.test(v.lang)) || null; },
+  // лучшие голоса — первыми: нейросетевые Microsoft (Edge), затем Google, затем «улучшенные» Apple
+  score(v){ const n = v.name; return /natural|neural/i.test(n) ? 100 : /online/i.test(n) ? 80 : /google/i.test(n) ? 60 : /premium|enhanced|улучш/i.test(n) ? 50 : /milena|yuri|katya|svetlana|dmitry/i.test(n) ? 30 : 10; },
+  list(){ if (!('speechSynthesis' in window)) return []; return speechSynthesis.getVoices().filter(v => /^ru/i.test(v.lang)).sort((a, b) => this.score(b) - this.score(a)); },
+  pick(){ const vs = this.list(); const saved = ls.get('pq_voicename', null);
+    this.v = vs.find(v => v.name === saved) || vs[0] || null; if (typeof fillVoices === 'function') fillVoices(); },
   say(text, {rate = 1, pitch = 1.05, onend} = {}){
     if (!this.on || !('speechSynthesis' in window)) { onend && onend(); return; }
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; if (this.v) u.voice = this.v;
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; try{ if (this.v) u.voice = this.v; }catch(e){}
     u.rate = rate; u.pitch = pitch; if (onend) u.onend = onend;
     speechSynthesis.speak(u);
   },
@@ -962,6 +968,7 @@ function hLobby(){
           <button class="btn small" id="botBtn">+ тест-игрок</button>
           <label class="btn small">📷 Фото Поли <span id="photoCount"></span><input type="file" id="photoIn" accept="image/*" multiple hidden></label>
         </div>
+        <div class="row voicerow"><span class="btn small vlabel">🗣️ Голос:<select id="voiceSel"></select></span><button class="btn small" id="voiceTest">▶ Проверить</button></div>
       </div>
     </div></div>
   </div></div>`;
@@ -970,6 +977,9 @@ function aLobby(){
   drawQR();
   $('#startBtn').onclick = startGame;
   $('#botBtn').onclick = addBot;
+  fillVoices();
+  $('#voiceSel').onchange = e => { const v = Voice.list().find(x => x.name === e.target.value); if (v){ Voice.v = v; ls.set('pq_voicename', v.name); } };
+  $('#voiceTest').onclick = () => { const was = Voice.on; Voice.on = true; Voice.say('С днём рождения, Поля! Вопрос первый: в каком городе знакомятся герои фильма «Трудности перевода»?'); Voice.on = was; };
   $('#photoIn').onchange = async e => {
     for (const f of e.target.files){ uploadedPhotos.push(await shrink(f)); }
     ls.set('pq_photos', uploadedPhotos); patchLobby();
@@ -1268,6 +1278,13 @@ function aFinal(){
   if (!AudioFX.on) return; AudioFX.music(); AudioFX.duck(.3);
 }
 
+function fillVoices(){
+  const sel = $('#voiceSel'); if (!sel) return;
+  const vs = Voice.list();
+  if (!vs.length){ sel.innerHTML = '<option>нет русских голосов</option>'; sel.disabled = true; return; }
+  sel.disabled = false;
+  sel.innerHTML = vs.map(v => `<option value="${esc(v.name)}"${Voice.v && Voice.v.name === v.name ? ' selected' : ''}>${Voice.score(v) >= 80 ? '★ ' : ''}${esc(v.name.replace(/^Microsoft\s+/,'').replace(/\s*-\s*Russian.*$/i,''))}</option>`).join('');
+}
 function hostTools(){
   const t = $('#tools');
   t.innerHTML = `<button id="tMusic" title="Музыка и звуки" class="${AudioFX.on ? '' : 'off'}">🎵</button><button id="tVoice" title="Озвучка вопросов" class="${Voice.on ? '' : 'off'}">🗣️</button>
